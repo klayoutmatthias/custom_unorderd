@@ -230,8 +230,17 @@ protected:
 
   void __insert (const V &v, size_t hash)
   {
-    size_t ib = hash % m_buckets.size ();
-    auto bucket = m_buckets.begin () + ib;
+    size_t ib;
+    typename buckets_type::iterator bucket;
+
+    if (m_buckets.empty ()) {
+      ib = 0;
+      m_buckets.push_back (std::pair<node_type *, size_t> (0, 0));
+      bucket = m_buckets.begin ();
+    } else {
+      ib = hash % m_buckets.size ();
+      bucket = m_buckets.begin () + ib;
+    }
 
     if (bucket->second >= max_bucket_size) {
       this->__split_buckets ();
@@ -468,6 +477,10 @@ private:
   template <class C, class X>
   std::pair<size_t, node_type *> __find_impl (const X &x, size_t hash, const C &compare)
   {
+    if (m_buckets.empty ()) {
+      return std::pair<size_t, node_type *> (0, 0);
+    }
+
     size_t ib = hash % m_buckets.size ();
     auto bucket = m_buckets.begin () + ib;
 
