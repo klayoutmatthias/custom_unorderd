@@ -64,7 +64,7 @@ public:
   }
 
   unordered_set (unordered_set &&other)
-    : __unordered_container<V, __hash_extractor_set<V, H>, max_bucket_size> (other)
+    : __unordered_container<V, __hash_extractor_set<V, H>, max_bucket_size> (std::move (other))
   {
   }
 
@@ -76,13 +76,18 @@ public:
 
   unordered_set &operator= (unordered_set &&other)
   {
-    __unordered_container<V, __hash_extractor_set<V, H>, max_bucket_size>::operator= (other);
+    __unordered_container<V, __hash_extractor_set<V, H>, max_bucket_size>::operator= (std::move (other));
     return *this;
+  }
+
+  const_iterator cfind (const V &v) const
+  {
+    return this->__find (v, __compare ());
   }
 
   const_iterator find (const V &v) const
   {
-    return this->__find (v, __compare ());
+    return cfind (v);
   }
 
   iterator find (const V &v) 
@@ -106,10 +111,15 @@ public:
     }
   }
 
+  void erase (iterator i)
+  {
+    __unordered_container<V, __hash_extractor_set<V, H>, max_bucket_size>::erase (i);
+  }
+
   void erase (const V &v)
   {
     iterator i = find (v);
-    if (i.mp_n) {
+    if (! i.at_end ()) {
       erase (i);
     }
   }
