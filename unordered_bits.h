@@ -481,8 +481,6 @@ private:
 
       b_new.swap (*b);
 
-      typename bucket_type::iterator wp = b_new.begin ();
-
       size_t other_size = 0;
       for (auto n = b_new.begin (); n != b_new.end (); ++n) {
         if ((n->first & new_bucket_mask) != 0) {
@@ -491,15 +489,20 @@ private:
       }
       b_new_other.reserve (other_size);
 
+      auto w = b_new.begin ();
+
       for (auto n = b_new.begin (); n != b_new.end (); ++n) {
         if ((n->first & new_bucket_mask) != 0) {
           b_new_other.push_back (std::move (*n));
         } else {
-          *wp++ = std::move (*n);
+          if (w != n) {
+            *w = std::move (*n);
+          }
+          ++w;
         }
       }
 
-      b_new.erase (wp, b_new.end ());
+      b_new.erase (w, b_new.end ());
 
     }
 

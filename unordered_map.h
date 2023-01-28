@@ -75,7 +75,7 @@ public:
   }
 
   unordered_map (unordered_map &&other)
-    : __unordered_container<std::pair<K, V>, __hash_extractor_map<K, V, H>, max_bucket_size> (other)
+    : __unordered_container<std::pair<K, V>, __hash_extractor_map<K, V, H>, max_bucket_size> (std::move (other))
   {
   }
 
@@ -87,13 +87,18 @@ public:
 
   unordered_map &operator= (unordered_map &&other)
   {
-    __unordered_container<std::pair<K, V>, __hash_extractor_map<K, V, H>, max_bucket_size>::operator= (other);
+    __unordered_container<std::pair<K, V>, __hash_extractor_map<K, V, H>, max_bucket_size>::operator= (std::move (other));
     return *this;
+  }
+
+  const_iterator cfind (const K &k) const
+  {
+    return this->__find (k, __compare ());
   }
 
   const_iterator find (const K &k) const
   {
-    return this->__find (k, __compare ());
+    return cfind (k);
   }
 
   iterator find (const K &k) 
@@ -115,10 +120,15 @@ public:
     }
   }
 
-  void erase (const V &v)
+  void erase (iterator i)
   {
-    iterator i = find (v);
-    if (i.mp_n) {
+    __unordered_container<std::pair<K, V>, __hash_extractor_map<K, V, H>, max_bucket_size>::erase (i);
+  }
+
+  void erase (const K &k)
+  {
+    iterator i = find (k);
+    if (! i.at_end ()) {
       erase (i);
     }
   }
