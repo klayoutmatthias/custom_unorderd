@@ -3,22 +3,13 @@
 #define _TL_UNORDERED_BITS
 
 #include <vector>
-#include <functional>  // @@@
 #include <algorithm>
 
 namespace tl
 {
 
-//  @@@ TODO: remove
-template <class X>
-struct hash
-{
-  size_t operator () (const X &x) const
-  {
-    return std::hash<X> () (x);
-  }
-};
-
+template <class V>
+struct hash;
 
 template <class V, class H, size_t max_bucket_size>
 class __unordered_container
@@ -335,10 +326,10 @@ private:
     : public __iterator_base
   {
   public:
+    typedef std::forward_iterator_tag iterator_category;
     typedef V value_type;
     typedef V &reference;
     typedef V *pointer;
-    //  @@@ traits, iterator_category
 
     __iterator ()
       : __iterator_base ()
@@ -387,10 +378,10 @@ private:
     : public __iterator_base
   {
   public:
+    typedef std::forward_iterator_tag iterator_category;
     typedef V value_type;
     typedef const V &reference;
     typedef const V *pointer;
-    //  @@@ traits, iterator_category
 
     __const_iterator ()
       : __iterator_base ()

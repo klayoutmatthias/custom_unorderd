@@ -8,9 +8,20 @@
 #include <stdio.h>
 #include <iostream>
 #include <string>
+#include <functional>  // for std::hash
 
 namespace tl
 {
+
+//  employing std::hash for now
+template <class X>
+struct hash
+{
+  size_t operator () (const X &x) const
+  {
+    return std::hash<X> () (x);
+  }
+};
 
 std::string to_string (int x)
 {
