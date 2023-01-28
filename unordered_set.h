@@ -29,7 +29,7 @@ private:
   H m_h;
 };
 
-template <class V, class H = tl::hash<V>, size_t max_bucket_size = 128>
+template <class V, class H = tl::hash<V>, size_t max_bucket_size = 16>
 class unordered_set
   : public __unordered_container<V, __hash_extractor_set<V, H>, max_bucket_size>
 {
@@ -54,8 +54,9 @@ public:
 
   template <class I>
   unordered_set (const I &from, const I &to)
-    : __unordered_container<V, __hash_extractor_set<V, H>, max_bucket_size> (from, to)
+    : __unordered_container<V, __hash_extractor_set<V, H>, max_bucket_size> ()
   {
+    insert (from, to);
   }
 
   unordered_set (const unordered_set &other)
@@ -97,17 +98,15 @@ public:
 
   void insert (const V &v)
   {
-    iterator i = find (v);
-    if (i.at_end ()) {
-      __unordered_container<V, __hash_extractor_set<V, H>, max_bucket_size>::insert (v);
-    }
+    this->__insert (v, __compare ());
   }
 
   template <class I>
   void insert (const I &from, const I &to)
   {
+    __compare compare;
     for (auto i = from; i != to; ++i) {
-      this->insert (*i);
+      this->__insert (*i, compare);
     }
   }
 

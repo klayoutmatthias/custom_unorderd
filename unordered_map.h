@@ -45,6 +45,11 @@ private:
     {
       return a.first == b;
     }
+
+    bool operator() (const std::pair<K, V> &a, const std::pair<K, V> &b) const
+    {
+      return a.first == b.first;
+    }
   };
 
 public:
@@ -59,8 +64,9 @@ public:
 
   template <class I>
   unordered_map (const I &from, const I &to)
-    : __unordered_container<std::pair<K, V>, __hash_extractor_map<K, V, H>, max_bucket_size> (from, to)
+    : __unordered_container<std::pair<K, V>, __hash_extractor_map<K, V, H>, max_bucket_size> ()
   {
+    insert (from, to);
   }
 
   unordered_map (const unordered_map &other)
@@ -95,19 +101,17 @@ public:
     return this->__find (k, __compare ());
   }
 
-  void insert (const std::pair<K, V> &kv)
+  void insert (const std::pair<K, V> &v)
   {
-    iterator i = find (kv.first);
-    if (i.at_end ()) {
-      __unordered_container<std::pair<K, V>, __hash_extractor_map<K, V, H>, max_bucket_size>::insert (kv);
-    }
+    this->__insert (v, __compare ());
   }
 
   template <class I>
   void insert (const I &from, const I &to)
   {
+    __compare compare;
     for (auto i = from; i != to; ++i) {
-      this->insert (*i);
+      this->__insert (*i, compare);
     }
   }
 

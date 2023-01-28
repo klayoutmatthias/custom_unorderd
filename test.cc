@@ -2,6 +2,9 @@
 #include "unordered_set.h"
 #include "unordered_map.h"
 
+#include <unordered_set>
+#include <unordered_map>
+
 #include <stdio.h>
 #include <iostream>
 #include <string>
@@ -325,7 +328,87 @@ void test_1 ()
   EXPECT_EQ(set.size(), 0);
 }
 
+const int n_perf = 1000000;
+
+//  performance insert
 void test_2()
+{
+  tl::unordered_set<std::string> set;
+
+  for (int i = 0; i < n_perf; ++i) {
+    set.insert (tl::to_string (i));
+  }
+}
+
+//  performance find
+void test_3()
+{
+  tl::unordered_set<std::string> set;
+
+  for (int i = 0; i < n_perf; ++i) {
+    set.insert (tl::to_string (i));
+  }
+
+  //  find
+  for (int i = 0; i < n_perf; ++i) {
+    set.find (tl::to_string (i));
+  }
+}
+
+//  performance insert again
+void test_4()
+{
+  tl::unordered_set<std::string> set;
+
+  for (int i = 0; i < n_perf; ++i) {
+    set.insert (tl::to_string (i));
+  }
+
+  for (int i = 0; i < n_perf; ++i) {
+    set.insert (tl::to_string (i));
+  }
+}
+
+//  performance insert std::unordered_set
+void test_5()
+{
+  std::unordered_set<std::string> set;
+
+  for (int i = 0; i < n_perf; ++i) {
+    set.insert (tl::to_string (i));
+  }
+}
+
+//  performance find std::unordered_set
+void test_6()
+{
+  std::unordered_set<std::string> set;
+
+  for (int i = 0; i < n_perf; ++i) {
+    set.insert (tl::to_string (i));
+  }
+
+  //  find
+  for (int i = 0; i < n_perf; ++i) {
+    set.find (tl::to_string (i));
+  }
+}
+
+//  performance insert again std::unordered_set
+void test_7()
+{
+  std::unordered_set<std::string> set;
+
+  for (int i = 0; i < n_perf; ++i) {
+    set.insert (tl::to_string (i));
+  }
+
+  for (int i = 0; i < n_perf; ++i) {
+    set.insert (tl::to_string (i));
+  }
+}
+
+void test_8()
 {
   tl::unordered_map<int, std::string> map;
 
@@ -339,7 +422,7 @@ void test_2()
 int main(int argc, char **argv)
 {
   errors = 0;
-  void (*tests[])() = { &test_1, &test_2 };
+  void (*tests[])() = { &test_1, &test_2, &test_3, &test_4, &test_5, &test_6, &test_7, &test_8 };
   size_t ntests = sizeof (tests) / sizeof (tests[0]);
 
   bool all = false;

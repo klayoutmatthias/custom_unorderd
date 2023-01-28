@@ -20,7 +20,7 @@ struct hash
 };
 
 
-template <class V, class H, size_t max_bucket_size = 128>
+template <class V, class H, size_t max_bucket_size>
 class __unordered_container
 {
 private:
@@ -51,13 +51,6 @@ public:
   ~__unordered_container ()
   {
     __clear ();
-  }
-
-  template <class I>
-  __unordered_container (const I &from, const I &to)
-  {
-    __init ();
-    insert (from, to);
   }
 
   __unordered_container (const __unordered_container &other)
@@ -200,19 +193,6 @@ public:
     return m_size == 0;
   }
 
-  void insert (const V &v)
-  {
-    __insert (v, m_h (v));
-  }
-
-  template <class I>
-  void insert (const I &from, const I &to)
-  {
-    for (auto i = from; i != to; ++i) {
-      __insert (*i, m_h (*i));
-    }
-  }
-
   void clear ()
   {
     __clear ();
@@ -258,18 +238,34 @@ protected:
     }
   }
 
-  void __insert (const V &v, size_t hash)
+  template <class C>
+  void __insert (const V &v, const C &compare)
   {
     size_t ib;
     typename buckets_type::iterator bucket;
+    size_t hash = m_h (v);
 
     if (m_buckets.empty ()) {
+
       ib = 0;
       m_buckets.push_back (bucket_type (0, 0));
       bucket = m_buckets.begin ();
+
     } else {
+
       ib = hash % m_buckets.size ();
       bucket = m_buckets.begin () + ib;
+
+      node_type *node = bucket->first;
+      while (node && ! compare (node->second, v)) {
+        node = node->first;
+      }
+
+      //  already present
+      if (node) {
+        return;
+      }
+
     }
 
     if (bucket->second >= max_bucket_size) {
