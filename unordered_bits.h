@@ -4,9 +4,12 @@
 
 #include <vector>
 #include <algorithm>
+#include <cstdint>
 
 namespace tl
 {
+
+typedef uint64_t hash_type;
 
 template <class V>
 struct hash;
@@ -217,7 +220,7 @@ protected:
   {
     size_t ib;
     typename buckets_type::iterator bucket;
-    size_t hash = m_h (v);
+    hash_type hash = m_h (v);
 
     if (m_buckets.empty ()) {
 
@@ -289,7 +292,7 @@ private:
     }
 
   protected:
-    std::pair<size_t, V> &__node () const
+    std::pair<hash_type, V> &__node () const
     {
       return *m_nb;
     }
@@ -438,7 +441,7 @@ private:
   }
 
   template <class C, class X>
-  std::pair<typename buckets_type::iterator, size_t> __find_impl (const X &x, size_t hash, const C &compare)
+  std::pair<typename buckets_type::iterator, size_t> __find_impl (const X &x, hash_type hash, const C &compare)
   {
     if (! m_buckets.empty ()) {
 

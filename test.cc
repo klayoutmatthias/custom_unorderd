@@ -17,7 +17,7 @@ namespace tl
 template <class X>
 struct hash
 {
-  size_t operator () (const X &x) const
+  tl::hash_type operator () (const X &x) const
   {
     return std::hash<X> () (x);
   }

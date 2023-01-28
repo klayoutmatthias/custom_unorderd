@@ -20,7 +20,7 @@ struct __hash_extractor_set
   {
   }
 
-  size_t operator () (const V &v) const
+  hash_type operator () (const V &v) const
   {
     return m_h (v);
   }

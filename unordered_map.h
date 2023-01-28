@@ -20,12 +20,12 @@ struct __hash_extractor_map
   {
   }
 
-  size_t operator () (const K &k) const
+  hash_type operator () (const K &k) const
   {
     return m_h (k);
   }
 
-  size_t operator () (const std::pair<K, V> &kv) const
+  hash_type operator () (const std::pair<K, V> &kv) const
   {
     return m_h (kv.first);
   }
