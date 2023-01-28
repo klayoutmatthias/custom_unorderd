@@ -101,32 +101,32 @@ void test_1 ()
   set.insert (2);
 
   EXPECT_EQ(set.size(), 2)
-  EXPECT_EQ(set_to_string(set), "2,1");
+  EXPECT_EQ(set_to_string(set), "1,2");
   EXPECT_EQ(set.__buckets().size(), 1);
 
   set.insert (3);
 
   EXPECT_EQ(set.size(), 3)
-  EXPECT_EQ(set_to_string(set), "3,2,1");
+  EXPECT_EQ(set_to_string(set), "1,2,3");
   EXPECT_EQ(set.__buckets().size(), 1);
 
   //  inserting the same thing again - no change
   set.insert (3);
 
   EXPECT_EQ(set.size(), 3)
-  EXPECT_EQ(set_to_string(set), "3,2,1");
+  EXPECT_EQ(set_to_string(set), "1,2,3");
   EXPECT_EQ(set.__buckets().size(), 1);
 
   set.insert (4);
 
   EXPECT_EQ(set.size(), 4)
-  EXPECT_EQ(set_to_string(set), "4,3,2,1");
+  EXPECT_EQ(set_to_string(set), "1,2,3,4");
   EXPECT_EQ(set.__buckets().size(), 1);
 
   set.insert (5);
 
   EXPECT_EQ(set.size(), 5)
-  EXPECT_EQ(set_to_string(set), "2,4,5,1,3");
+  EXPECT_EQ(set_to_string(set), "2,4,1,3,5");
   EXPECT_EQ(set.__buckets().size(), 2);
 
   set.insert (6);
@@ -136,8 +136,8 @@ void test_1 ()
   set.insert (10);
 
   EXPECT_EQ(set.size(), 10)
-  EXPECT_EQ(set_to_string(set), "4,8,9,1,5,10,2,6,3,7");
-  EXPECT_EQ(set_to_string_nc(set), "4,8,9,1,5,10,2,6,3,7");
+  EXPECT_EQ(set_to_string(set), "4,8,1,5,9,2,6,10,3,7");
+  EXPECT_EQ(set_to_string_nc(set), "4,8,1,5,9,2,6,10,3,7");
   EXPECT_EQ(set.__buckets().size(), 4);
 
   //  assignment
@@ -150,10 +150,10 @@ void test_1 ()
   EXPECT_EQ(set2.size(), 1)
 
   set2 = set;
-  EXPECT_EQ(set_to_string(set), "4,8,9,1,5,10,2,6,3,7");
+  EXPECT_EQ(set_to_string(set), "4,8,1,5,9,2,6,10,3,7");
   EXPECT_EQ(set.size(), 10)
   EXPECT_EQ(set.empty(), false)
-  EXPECT_EQ(set_to_string(set2), "4,8,9,1,5,10,2,6,3,7");
+  EXPECT_EQ(set_to_string(set2), "4,8,1,5,9,2,6,10,3,7");
   EXPECT_EQ(set2.size(), 10)
   EXPECT_EQ(set2.empty(), false)
 
@@ -176,7 +176,7 @@ void test_1 ()
   set2 = std::move (set);
   EXPECT_EQ(set_to_string(set), "");
   EXPECT_EQ(set.size(), 0)
-  EXPECT_EQ(set_to_string(set2), "4,8,9,1,5,10,2,6,3,7");
+  EXPECT_EQ(set_to_string(set2), "4,8,1,5,9,2,6,10,3,7");
   EXPECT_EQ(set2.size(), 10)
 
   //  swap
@@ -186,7 +186,7 @@ void test_1 ()
 
   set2.swap (set);
 
-  EXPECT_EQ(set_to_string(set), "4,8,9,1,5,10,2,6,3,7");
+  EXPECT_EQ(set_to_string(set), "4,8,1,5,9,2,6,10,3,7");
   EXPECT_EQ(set.size(), 10)
   EXPECT_EQ(set_to_string(set2), "");
   EXPECT_EQ(set2.size(), 0)
@@ -206,7 +206,7 @@ void test_1 ()
   //  creation from iterator
 
   set = tl::unordered_set<int, tl::hash<int>, 4> (&data[0], &data[sizeof (data) / sizeof (data [0])]);
-  EXPECT_EQ(set_to_string(set), "4,8,9,1,5,10,2,6,3,7");
+  EXPECT_EQ(set_to_string(set), "4,8,1,5,9,2,6,10,3,7");
   EXPECT_EQ(set.size(), 10)
 
   //  copy constructor
@@ -218,7 +218,7 @@ void test_1 ()
   EXPECT_EQ(set2.empty (), true);
   EXPECT_EQ(set2.size(), 0)
   set2 = tl::unordered_set<int, tl::hash<int>, 4> (set);
-  EXPECT_EQ(set_to_string(set2), "4,8,9,1,5,10,2,6,3,7");
+  EXPECT_EQ(set_to_string(set2), "4,8,1,5,9,2,6,10,3,7");
   EXPECT_EQ(set2.size(), 10)
 
   //  move constructor
@@ -231,7 +231,7 @@ void test_1 ()
 
   set2 = tl::unordered_set<int, tl::hash<int>, 4> (std::move (set));
 
-  EXPECT_EQ(set_to_string(set2), "4,8,9,1,5,10,2,6,3,7");
+  EXPECT_EQ(set_to_string(set2), "4,8,1,5,9,2,6,10,3,7");
   EXPECT_EQ(set2.size(), 10)
   EXPECT_EQ(set.empty (), true);
   EXPECT_EQ(set.size(), 0)
@@ -283,7 +283,7 @@ void test_1 ()
   //  find
 
   set = tl::unordered_set<int, tl::hash<int>, 4> (&data[0], &data[sizeof (data) / sizeof (data [0])]);
-  EXPECT_EQ(set_to_string(set), "4,8,9,1,5,10,2,6,3,7");
+  EXPECT_EQ(set_to_string(set), "4,8,1,5,9,2,6,10,3,7");
 
   for (int i = 1; i <= 10; ++i) {
     auto f = set.find (i);
@@ -299,10 +299,10 @@ void test_1 ()
   //  erase
 
   set = tl::unordered_set<int, tl::hash<int>, 4> (&data[0], &data[sizeof (data) / sizeof (data [0])]);
-  EXPECT_EQ(set_to_string(set), "4,8,9,1,5,10,2,6,3,7");
+  EXPECT_EQ(set_to_string(set), "4,8,1,5,9,2,6,10,3,7");
 
   set.erase (5);
-  EXPECT_EQ(set_to_string(set), "4,8,9,1,10,2,6,3,7");
+  EXPECT_EQ(set_to_string(set), "4,8,1,9,2,6,10,3,7");
   EXPECT_EQ(set.size(), 9);
 
   set.erase (1);

@@ -29,7 +29,7 @@ private:
   H m_h;
 };
 
-template <class V, class H = tl::hash<V>, size_t max_bucket_size = 16>
+template <class V, class H = tl::hash<V>, size_t max_bucket_size = 64>
 class unordered_set
   : public __unordered_container<V, __hash_extractor_set<V, H>, max_bucket_size>
 {

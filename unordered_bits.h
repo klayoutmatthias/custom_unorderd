@@ -27,19 +27,7 @@ private:
   class __iterator;
   class __const_iterator;
 
-  class __node
-  {
-  public:
-    __node () : next (0), hash (0), value () { }
-    __node (__node *n, size_t h, const V &v) : next (n), hash (h), value (v) { }
-
-    __node *next;
-    size_t hash;
-    V value;
-  };
-
-  typedef __node node_type;
-  typedef std::pair<node_type *, size_t> bucket_type;
+  typedef std::vector<std::pair<size_t, V> > bucket_type;
   typedef std::vector<bucket_type> buckets_type;
 
 public:
@@ -74,18 +62,10 @@ public:
 
       __clear ();
 
+      m_buckets.reserve (other.m_buckets.size ());
+
       for (auto b = other.m_buckets.begin (); b != other.m_buckets.end (); ++b) {
-
-        m_buckets.push_back (bucket_type (0, b->second));
-
-        node_type **last_node_new = &m_buckets.back ().first;
-        
-        for (node_type *node = b->first; node; node = node->next) {
-          node_type *new_node = new node_type (0, node->hash, node->value);
-          *last_node_new = new_node;
-          last_node_new = &new_node->next;
-        }
-
+        m_buckets.push_back (*b);
       }
 
       m_size = other.m_size;
@@ -149,16 +129,16 @@ public:
       return end ();
     } else {
       auto b = m_buckets.begin ();
-      while (b != m_buckets.end () && ! b->first) {
+      while (b != m_buckets.end () && b->empty ()) {
         ++b;
       }
-      return iterator (b, m_buckets.end (), b->first);
+      return iterator (b, m_buckets.end (), b->begin (), b->end ());
     }
   }
 
   iterator end ()
   {
-    return iterator (m_buckets.end (), m_buckets.end (), 0);
+    return iterator (m_buckets.end (), m_buckets.end (), typename bucket_type::iterator (), typename bucket_type::iterator ());
   }
 
   const_iterator begin () const
@@ -173,10 +153,10 @@ public:
     } else {
       __unordered_container *nc_this = const_cast<__unordered_container *> (this);
       auto b = nc_this->m_buckets.begin ();
-      while (b != nc_this->m_buckets.end () && ! b->first) {
+      while (b != nc_this->m_buckets.end () && b->empty ()) {
         ++b;
       }
-      return const_iterator (b, nc_this->m_buckets.end (), b->first);
+      return const_iterator (b, nc_this->m_buckets.end (), b->begin (), b->end ());
     }
   }
 
@@ -188,7 +168,7 @@ public:
   const_iterator cend () const
   {
     __unordered_container *nc_this = const_cast<__unordered_container *> (this);
-    return const_iterator (nc_this->m_buckets.end (), nc_this->m_buckets.end (), 0);
+    return const_iterator (nc_this->m_buckets.end (), nc_this->m_buckets.end (), typename bucket_type::iterator (), typename bucket_type::iterator ());
   }
 
   bool empty () const
@@ -203,7 +183,7 @@ public:
 
   void erase (iterator i)
   {
-    __erase (*i.m_b, &i.mp_n->value);
+    __erase (*i.m_b, i.m_nb);
   }
 
   size_t size () const
@@ -223,8 +203,8 @@ protected:
   {
     __unordered_container *nc_this = const_cast<__unordered_container *> (this);
     auto f = nc_this->__find_impl (x, m_h (x), c);
-    if (f.second) {
-      return const_iterator (nc_this->m_buckets.begin () + f.first, nc_this->m_buckets.end (), f.second);
+    if (f.first != nc_this->m_buckets.end ()) {
+      return const_iterator (f.first, nc_this->m_buckets.end (), f.first->begin () + f.second, f.first->end ());
     } else {
       return end ();
     }
@@ -234,8 +214,8 @@ protected:
   iterator __find (const X &x, const C &c)
   {
     auto f = __find_impl (x, m_h (x), c);
-    if (f.second) {
-      return iterator (m_buckets.begin () + f.first, m_buckets.end (), f.second);
+    if (f.first != m_buckets.end ()) {
+      return iterator (f.first, m_buckets.end (), f.first->begin () + f.second, f.first->end ());
     } else {
       return end ();
     }
@@ -251,7 +231,7 @@ protected:
     if (m_buckets.empty ()) {
 
       ib = 0;
-      m_buckets.push_back (bucket_type (0, 0));
+      m_buckets.push_back (bucket_type ());
       bucket = m_buckets.begin ();
 
     } else {
@@ -259,44 +239,30 @@ protected:
       ib = hash % m_buckets.size ();
       bucket = m_buckets.begin () + ib;
 
-      node_type *node = bucket->first;
-      while (node && (node->hash != hash || ! compare (node->value, v))) {
-        node = node->next;
-      }
-
-      //  already present
-      if (node) {
-        return;
+      for (auto n = bucket->begin (); n != bucket->end (); ++n) {
+        if (n->first == hash && compare (n->second, v)) {
+          //  already present
+          return;
+        }
       }
 
     }
 
-    if (bucket->second >= max_bucket_size) {
+    if (bucket->size () >= max_bucket_size) {
       this->__split_buckets ();
       ib = hash % m_buckets.size ();
       bucket = m_buckets.begin () + ib;
     }
 
-    node_type *n = new node_type (bucket->first, hash, v);
-    bucket->first = n;
-    bucket->second += 1;
+    bucket->push_back (std::make_pair (hash, v));
 
     m_size += 1;
   }
 
-  void __erase (bucket_type &bucket, V *vp)
+  void __erase (bucket_type &bucket, const typename bucket_type::iterator &n)
   {
-    node_type **node = &bucket.first;
-    while (*node != 0 && &((*node)->value) != vp) {
-      node = &(*node)->next;
-    }
-
-    if (*node) {
-      node_type *next_node = (*node)->next;
-      delete *node;
-      *node = next_node;
-      m_size -= 1;
-    }
+    bucket.erase (n);
+    m_size -= 1;
   }
 
 private:
@@ -309,58 +275,60 @@ private:
   public:
     friend class __unordered_container;
     typedef typename __unordered_container::buckets_type::iterator buckets_iterator;
-    typedef typename __unordered_container::node_type node_type;
+    typedef typename __unordered_container::bucket_type::iterator bucket_iterator;
 
     __iterator_base ()
-      : m_b (), m_e (), mp_n (0)
+      : m_b (), m_e (), m_nb (), m_ne ()
     {
     }
 
     bool operator== (const __iterator_base &other) const
     {
-      return mp_n == other.mp_n;
+      return m_b == other.m_b && (m_b == m_e || m_nb == other.m_nb);
     }
 
     bool operator!= (const __iterator_base &other) const
     {
-      return mp_n != other.mp_n;
+      return ! operator== (other);
     }
 
     bool at_end () const
     {
-      return ! mp_n;
+      return m_b == m_e;
     }
 
   protected:
-    node_type *__node () const
+    std::pair<size_t, V> &__node () const
     {
-      return mp_n;
+      return *m_nb;
     }
 
-    void __set (buckets_iterator b, buckets_iterator e, node_type *n)
+    void __set (buckets_iterator b, buckets_iterator e, bucket_iterator nb, bucket_iterator ne)
     { 
       m_b = b;
       m_e = e;
-      mp_n = n;
+      m_nb = nb;
+      m_ne = ne;
     }
 
     void __inc ()
     {
-      if (mp_n) {
-        mp_n = mp_n->next;
+      if (m_nb != m_ne) {
+        ++m_nb;
       }
 
-      if (! mp_n) {
+      if (m_nb == m_ne) {
         ++m_b;
         if (m_b != m_e) {
-          mp_n = m_b->first;
+          m_nb = m_b->begin ();
+          m_ne = m_b->end ();
         }
       }
     }
 
   private:
     buckets_iterator m_b, m_e;
-    node_type *mp_n;
+    bucket_iterator m_nb, m_ne;
   };
 
   class __iterator
@@ -379,7 +347,7 @@ private:
 
     __iterator (const __iterator &other)
     {
-      this->__set (other.m_b, other.m_e, other.mp_n);
+      this->__set (other.m_b, other.m_e, other.m_nb, other.m_ne);
     }
 
     __iterator &operator= (const __iterator &other)
@@ -392,12 +360,12 @@ private:
 
     reference operator* () const
     {
-      return this->__node ()->value;
+      return this->__node ().second;
     }
 
     pointer operator-> () const
     {
-      return &this->__node ()->value;
+      return &this->__node ().second;
     }
 
     __iterator operator++ ()
@@ -409,9 +377,9 @@ private:
   private:
     friend class __unordered_container;
 
-    __iterator (typename __iterator_base::buckets_iterator b, typename __iterator_base::buckets_iterator e, node_type *n)
+    __iterator (typename __iterator_base::buckets_iterator b, typename __iterator_base::buckets_iterator e, typename __iterator_base::bucket_iterator nb, typename __iterator_base::bucket_iterator ne)
     { 
-      this->__set (b, e, n);
+      this->__set (b, e, nb, ne);
     }
   };
 
@@ -431,7 +399,7 @@ private:
 
     __const_iterator (const __const_iterator &other)
     {
-      this->__set (other.m_b, other.m_e, other.mp_n);
+      this->__set (other.m_b, other.m_e, other.m_nb, other.m_ne);
     }
 
     __const_iterator &operator= (const __const_iterator &other)
@@ -444,12 +412,12 @@ private:
 
     reference operator* () const
     {
-      return this->__node ()->value;
+      return this->__node ().second;
     }
 
     pointer operator-> () const
     {
-      return &this->__node ()->value;
+      return &this->__node ().second;
     }
 
     __const_iterator operator++ ()
@@ -461,9 +429,9 @@ private:
   private:
     friend class __unordered_container;
 
-    __const_iterator (typename __iterator_base::buckets_iterator b, typename __iterator_base::buckets_iterator e, node_type *n)
+    __const_iterator (typename __iterator_base::buckets_iterator b, typename __iterator_base::buckets_iterator e, typename __iterator_base::bucket_iterator nb, typename __iterator_base::bucket_iterator ne)
     { 
-      this->__set (b, e, n);
+      this->__set (b, e, nb, ne);
     }
   };
 
@@ -474,70 +442,64 @@ private:
 
   void __clear ()
   {
-    for (auto b = m_buckets.begin (); b != m_buckets.end (); ++b) {
-
-      node_type *node = b->first;
-      b->first = 0;
-
-      while (node != 0) {
-        node_type *next_node = node->next;
-        delete node;
-        node = next_node;
-      }
-
-    }
-
     m_buckets.clear ();
     m_size = 0;
   }
 
   template <class C, class X>
-  std::pair<size_t, node_type *> __find_impl (const X &x, size_t hash, const C &compare)
+  std::pair<typename buckets_type::iterator, size_t> __find_impl (const X &x, size_t hash, const C &compare)
   {
-    if (m_buckets.empty ()) {
-      return std::pair<size_t, node_type *> (0, 0);
+    if (! m_buckets.empty ()) {
+
+      size_t ib = hash % m_buckets.size ();
+      auto bucket = m_buckets.begin () + ib;
+
+      for (auto f = bucket->begin (); f != bucket->end (); ++f) {
+        if (f->first == hash && compare (f->second, x)) {
+          return std::pair<typename buckets_type::iterator, size_t> (bucket, f - bucket->begin ());
+        }
+      }
+
     }
 
-    size_t ib = hash % m_buckets.size ();
-    auto bucket = m_buckets.begin () + ib;
-
-    node_type *node = bucket->first;
-    while (node && (node->hash != hash || ! compare (node->value, x))) {
-      node = node->next;
-    }
-
-    return std::make_pair (ib, node);
+    return std::pair<typename buckets_type::iterator, size_t> (m_buckets.end (), 0);
   }
 
   void __split_buckets ()
   {
     buckets_type new_buckets;
     size_t new_buckets_size = m_buckets.size () * 2;
+    size_t new_bucket_mask = new_buckets_size >> 1;
 
-    new_buckets.resize (new_buckets_size, std::make_pair ((node_type *) 0, size_t (0)));
+    new_buckets.resize (new_buckets_size, bucket_type ());
 
-    for (auto b = m_buckets.begin (); b != m_buckets.end (); ++b) {
+    size_t ib = 0;
+    for (auto b = m_buckets.begin (); b != m_buckets.end (); ++b, ++ib) {
 
-      node_type *node = b->first;
-      b->first = 0;
+      bucket_type &b_new = new_buckets [ib];
+      bucket_type &b_new_other = new_buckets [ib + m_buckets.size ()];
 
-      while (node != 0) {
+      b_new.swap (*b);
 
-        node_type *next_node = node->next;
+      typename bucket_type::iterator wp = b_new.begin ();
 
-        size_t h = node->hash;
-        size_t ib_new = h % new_buckets_size;
-
-        auto new_bucket = new_buckets.begin () + ib_new;
-        node_type **last_node_new = &new_buckets [h % new_buckets_size].first;
-
-        node->next = new_bucket->first;
-        new_bucket->first = node;
-        new_bucket->second += 1;
-
-        node = next_node;
-
+      size_t other_size = 0;
+      for (auto n = b_new.begin (); n != b_new.end (); ++n) {
+        if ((n->first & new_bucket_mask) != 0) {
+          ++other_size;
+        }
       }
+      b_new_other.reserve (other_size);
+
+      for (auto n = b_new.begin (); n != b_new.end (); ++n) {
+        if ((n->first & new_bucket_mask) != 0) {
+          b_new_other.push_back (std::move (*n));
+        } else {
+          *wp++ = std::move (*n);
+        }
+      }
+
+      b_new.erase (wp, b_new.end ());
 
     }
 
