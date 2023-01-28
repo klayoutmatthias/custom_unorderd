@@ -28,11 +28,14 @@ private:
   class __const_iterator;
 
   class __node
-    : public std::pair<__node *, V>
   {
   public:
-    __node () : std::pair<__node *, V> () { }
-    __node (__node *n, const V &v) : std::pair<__node *, V> (n, v) { }
+    __node () : next (0), hash (0), value () { }
+    __node (__node *n, size_t h, const V &v) : next (n), hash (h), value (v) { }
+
+    __node *next;
+    size_t hash;
+    V value;
   };
 
   typedef __node node_type;
@@ -77,10 +80,10 @@ public:
 
         node_type **last_node_new = &m_buckets.back ().first;
         
-        for (node_type *node = b->first; node; node = node->first) {
-          node_type *new_node = new node_type (0, node->second);
+        for (node_type *node = b->first; node; node = node->next) {
+          node_type *new_node = new node_type (0, node->hash, node->value);
           *last_node_new = new_node;
-          last_node_new = &new_node->first;
+          last_node_new = &new_node->next;
         }
 
       }
@@ -200,7 +203,7 @@ public:
 
   void erase (iterator i)
   {
-    __erase (*i.m_b, &i.mp_n->second);
+    __erase (*i.m_b, &i.mp_n->value);
   }
 
   size_t size () const
@@ -257,8 +260,8 @@ protected:
       bucket = m_buckets.begin () + ib;
 
       node_type *node = bucket->first;
-      while (node && ! compare (node->second, v)) {
-        node = node->first;
+      while (node && (node->hash != hash || ! compare (node->value, v))) {
+        node = node->next;
       }
 
       //  already present
@@ -274,7 +277,7 @@ protected:
       bucket = m_buckets.begin () + ib;
     }
 
-    node_type *n = new node_type (bucket->first, v);
+    node_type *n = new node_type (bucket->first, hash, v);
     bucket->first = n;
     bucket->second += 1;
 
@@ -284,12 +287,12 @@ protected:
   void __erase (bucket_type &bucket, V *vp)
   {
     node_type **node = &bucket.first;
-    while (*node != 0 && &((*node)->second) != vp) {
-      node = &(*node)->first;
+    while (*node != 0 && &((*node)->value) != vp) {
+      node = &(*node)->next;
     }
 
     if (*node) {
-      node_type *next_node = (*node)->first;
+      node_type *next_node = (*node)->next;
       delete *node;
       *node = next_node;
       m_size -= 1;
@@ -344,7 +347,7 @@ private:
     void __inc ()
     {
       if (mp_n) {
-        mp_n = mp_n->first;
+        mp_n = mp_n->next;
       }
 
       if (! mp_n) {
@@ -389,12 +392,12 @@ private:
 
     reference operator* () const
     {
-      return this->__node ()->second;
+      return this->__node ()->value;
     }
 
     pointer operator-> () const
     {
-      return &this->__node ()->second;
+      return &this->__node ()->value;
     }
 
     __iterator operator++ ()
@@ -441,12 +444,12 @@ private:
 
     reference operator* () const
     {
-      return this->__node ()->second;
+      return this->__node ()->value;
     }
 
     pointer operator-> () const
     {
-      return &this->__node ()->second;
+      return &this->__node ()->value;
     }
 
     __const_iterator operator++ ()
@@ -477,7 +480,7 @@ private:
       b->first = 0;
 
       while (node != 0) {
-        node_type *next_node = node->first;
+        node_type *next_node = node->next;
         delete node;
         node = next_node;
       }
@@ -499,8 +502,8 @@ private:
     auto bucket = m_buckets.begin () + ib;
 
     node_type *node = bucket->first;
-    while (node && ! compare (node->second, x)) {
-      node = node->first;
+    while (node && (node->hash != hash || ! compare (node->value, x))) {
+      node = node->next;
     }
 
     return std::make_pair (ib, node);
@@ -520,16 +523,15 @@ private:
 
       while (node != 0) {
 
-        node_type *next_node = node->first;
+        node_type *next_node = node->next;
 
-        //  TODO: exception safety on hash function
-        size_t h = m_h (node->second);
+        size_t h = node->hash;
         size_t ib_new = h % new_buckets_size;
 
         auto new_bucket = new_buckets.begin () + ib_new;
         node_type **last_node_new = &new_buckets [h % new_buckets_size].first;
 
-        node->first = new_bucket->first;
+        node->next = new_bucket->first;
         new_bucket->first = node;
         new_bucket->second += 1;
 
